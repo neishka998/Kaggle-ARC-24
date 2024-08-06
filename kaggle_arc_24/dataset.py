@@ -6,6 +6,7 @@ from tqdm.auto import tqdm
 import numpy as np
 import albumentations as A
 import cv2
+import torch
 
 
 class Arc24DatasetTransformations(Dataset):
@@ -16,7 +17,8 @@ class Arc24DatasetTransformations(Dataset):
             # solution_path:str, 
             max_dim_task:int=30, 
             pad_val:int=0,
-            max_n_tasks:int=10
+            max_n_tasks:int=10,
+            transforms=None
             ) -> None:
         super(Arc24DatasetTransformations, self).__init__()
 
@@ -30,6 +32,7 @@ class Arc24DatasetTransformations(Dataset):
         self.max_dim_task = max_dim_task
         self.pad_val = pad_val
         self.max_n_tasks = max_n_tasks
+        self.transforms = transforms
 
 
     def init_data(self, data):
@@ -81,11 +84,9 @@ class Arc24DatasetTransformations(Dataset):
             tasks_input = np.concatenate((tasks_input, pad_tasks))
             tasks_output = np.concatenate((tasks_output, pad_tasks))
 
+
         assert tasks_input.shape == tasks_output.shape, "Shapes between input/output don't match"
-        return tasks_input, tasks_output
-
-
-
-# train_dataset = Arc24DatasetTransformations(data_path=r'C:\Users\tommy\Developer\Kaggle-ARC-24\arc-prize-2024\arc-agi_training_challenges.json')
-# train_input, train_output = train_dataset.__getitem__(23)
-# print(train_input.shape, train_output.shape)
+        if self.transforms:
+            tasks_input = self.transforms(tasks_input)
+            tasks_output = self.transforms(tasks_output)
+        return torch.tensor(tasks_input, dtype=torch.float32), torch.tensor(tasks_output, dtype=torch.float32)
