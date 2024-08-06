@@ -1,0 +1,3 @@
+*.json
+kaggle_arc_24.egg-info
+*.pyc
