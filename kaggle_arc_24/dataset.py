@@ -58,32 +58,28 @@ class Arc24DatasetTransformations(Dataset):
 
         pad_if_needed = A.PadIfNeeded(self.max_dim_task, self.max_dim_task, border_mode=cv2.BORDER_CONSTANT, value=self.pad_val)
 
-        for idx, r in self.df.iterrows():
-            train_input = r.train_input
-            train_output = r.train_output
+        n_samples = len(train_input)
+        tasks_input = np.zeros((n_samples, self.max_dim_task, self.max_dim_task))
+        tasks_output = np.zeros((n_samples, self.max_dim_task, self.max_dim_task))
+        for n in range(n_samples):
+            sample_input = train_input[n]
+            sample_output = train_output[n]
+            # prepare input data
+            task_input = np.array(sample_input)
+            task_input = pad_if_needed(image=task_input)['image']
+            tasks_input[n] = task_input
 
-            n_samples = len(train_input)
-            tasks_input = np.zeros((n_samples, self.max_dim_task, self.max_dim_task))
-            tasks_output = np.zeros((n_samples, self.max_dim_task, self.max_dim_task))
-            for n in range(n_samples):
-                sample_input = train_input[n]
-                sample_output = train_output[n]
-                # prepare input data
-                task_input = np.array(sample_input)
-                task_input = pad_if_needed(image=task_input)['image']
-                tasks_input[n] = task_input
+            # prepare output data
+            task_output = np.array(sample_output)
+            task_output = pad_if_needed(image=task_output)['image']
+            tasks_output[n] = task_output
 
-                # prepare output data
-                task_output = np.array(sample_output)
-                task_output = pad_if_needed(image=task_output)['image']
-                tasks_output[n] = task_output
+        n_empty_tasks_to_add = self.max_n_tasks - n_samples
 
-            n_empty_tasks_to_add = self.max_n_tasks - n_samples
-
-            if n_empty_tasks_to_add > 0:
-                pad_tasks = np.zeros((n_empty_tasks_to_add, self.max_dim_task, self.max_dim_task))
-                tasks_input = np.concatenate((tasks_input, pad_tasks))
-                tasks_output = np.concatenate((tasks_output, pad_tasks))
+        if n_empty_tasks_to_add > 0:
+            pad_tasks = np.zeros((n_empty_tasks_to_add, self.max_dim_task, self.max_dim_task))
+            tasks_input = np.concatenate((tasks_input, pad_tasks))
+            tasks_output = np.concatenate((tasks_output, pad_tasks))
 
         assert tasks_input.shape == tasks_output.shape, "Shapes between input/output don't match"
         return tasks_input, tasks_output
